@@ -1,5 +1,5 @@
 {
-  "game_name": "<FILL THIS>",
-  "description": "<FILL THIS>",
-  "player_mode": "two_player"
+  "game_name": "Obelisco",
+  "description": "The Buenos Aires Obelisco is a rocket. Liftoff is triumphant. Orbit is brief. Then the engine fails and the rest is an endless desperate fall through the atmosphere — rotate to thread debris and chase rings. One hit, you shatter.",
+  "player_mode": "single_player"
 }
