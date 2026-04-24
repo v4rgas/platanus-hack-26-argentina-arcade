@@ -153,25 +153,13 @@ function create() {
 
   // Title UI
   s.title = s.add
-    .text(GW / 2, 100, 'OBELISCO', {
-      fontFamily: 'monospace',
-      fontSize: '78px',
-      color: '#f0f4ff',
-      fontStyle: 'bold',
-      stroke: '#1a1535',
-      strokeThickness: 6,
-    })
+    .text(GW / 2, 100, 'OBELISCO', TS(78, '#f0f4ff', '#1a1535', 6))
     .setOrigin(0.5)
     .setDepth(10);
   try { s.title.setLetterSpacing(10); } catch (_) {}
 
   s.prompt = s.add
-    .text(GW / 2, 170, 'PRESS ↑ TO LAUNCH', {
-      fontFamily: 'monospace',
-      fontSize: '20px',
-      color: '#ffd85c',
-      fontStyle: 'bold',
-    })
+    .text(GW / 2, 170, 'PRESS ↑ TO LAUNCH', TS(20, '#ffd85c'))
     .setOrigin(0.5)
     .setDepth(10);
 
@@ -185,14 +173,7 @@ function create() {
   });
 
   s.countdownText = s.add
-    .text(GW / 2, GH / 2, '3', {
-      fontFamily: 'monospace',
-      fontSize: '220px',
-      color: '#ffffff',
-      fontStyle: 'bold',
-      stroke: '#ff2a4a',
-      strokeThickness: 12,
-    })
+    .text(GW / 2, GH / 2, '3', TS(220, '#ffffff', '#ff2a4a', 12))
     .setOrigin(0.5)
     .setDepth(11)
     .setVisible(false);
@@ -235,6 +216,12 @@ function pressed(s, code) {
 }
 
 function lerp(a, b, t) { return a + (b - a) * t; }
+
+function TS(size, color, stroke, thk) {
+  const o = { fontFamily: 'monospace', fontSize: size + 'px', color, fontStyle: 'bold' };
+  if (stroke) { o.stroke = stroke; o.strokeThickness = thk; }
+  return o;
+}
 
 function drawSky(g, prog) {
   g.clear();
@@ -325,34 +312,14 @@ function drawSkyline(g) {
     // Cornice band near top
     g.fillStyle(SHADE[pi], 1).fillRect(b.x, top + 4, b.w, 2);
 
-    // Mansard or flat roof
     const roofCol = ROOF_DARK[Math.floor(rnd() * ROOF_DARK.length)];
-    if (rnd() < 0.55 && b.w >= 30) {
-      // mansard: stepped slate roof above body
-      const rh = 6 + Math.floor(rnd() * 6);
-      g.fillStyle(roofCol, 1).fillRect(b.x + 1, top - rh, b.w - 2, rh);
-      g.fillStyle(0x5a4a36, 1).fillRect(b.x, top - rh, b.w, 1);
-      // dormer windows
-      for (let dx = b.x + 4; dx < b.x + b.w - 6; dx += 10) {
-        g.fillStyle(0xf4e6c6, 1).fillRect(dx, top - rh + 2, 3, rh - 3);
-        g.fillStyle(WINDOW, 1).fillRect(dx + 1, top - rh + 3, 1, rh - 5);
-      }
-    } else {
-      // flat roof with parapet + rooftop water tank
-      g.fillStyle(roofCol, 1).fillRect(b.x, top - 2, b.w, 2);
-      if (rnd() < 0.5) {
-        const tw = 4 + Math.floor(rnd() * 5);
-        const tx = b.x + 3 + Math.floor(rnd() * Math.max(1, b.w - tw - 6));
-        g.fillStyle(0x8a7a5a, 1).fillRect(tx, top - 8, tw, 6);
-        g.fillStyle(0x5a4a36, 1).fillRect(tx, top - 8, tw, 1);
-      }
-      if (rnd() < 0.35) {
-        // antenna
-        g.fillStyle(0x2a2a2a, 1).fillRect(b.x + Math.floor(b.w / 2), top - 12, 1, 10);
-      }
+    g.fillStyle(roofCol, 1).fillRect(b.x, top - 2, b.w, 2);
+    if (rnd() < 0.4) {
+      const tw = 4 + Math.floor(rnd() * 5);
+      const tx = b.x + 3 + Math.floor(rnd() * Math.max(1, b.w - tw - 6));
+      g.fillStyle(0x8a7a5a, 1).fillRect(tx, top - 8, tw, 6);
     }
 
-    // Windows: regular grid with sills, classic porteño balconies
     const cols = Math.max(1, Math.floor((b.w - 6) / 6));
     const rows = Math.max(1, Math.floor((b.h - 14) / 8));
     const marginX = Math.floor((b.w - cols * 6) / 2);
@@ -360,45 +327,11 @@ function drawSkyline(g) {
       const wy = top + 10 + r * 8;
       for (let c = 0; c < cols; c += 1) {
         const wx = b.x + marginX + c * 6;
-        // window pane
         g.fillStyle(WINDOW, 1).fillRect(wx, wy, 3, 4);
-        // glass highlight
-        g.fillStyle(0x6a8ab0, 0.7).fillRect(wx, wy, 1, 1);
-        // sill
         g.fillStyle(WINDOW_FRAME, 1).fillRect(wx - 1, wy + 4, 5, 1);
-        // balcony railing (every other floor, if room)
-        if (r % 2 === 1 && cols > 1) {
-          g.fillStyle(0x2a2a2a, 1).fillRect(wx - 1, wy + 5, 5, 1);
-          g.fillStyle(0x2a2a2a, 1).fillRect(wx, wy + 5, 1, 2);
-          g.fillStyle(0x2a2a2a, 1).fillRect(wx + 2, wy + 5, 1, 2);
-        }
       }
     }
   }
-
-  // ---- Landmark: Congreso-style dome (left) ----
-  const drawDome = (cx, baseY, r, bodyW, bodyH) => {
-    // base block
-    g.fillStyle(0xe6d4b0, 1).fillRect(cx - bodyW / 2, baseY - bodyH, bodyW, bodyH);
-    g.fillStyle(0xb59c78, 1).fillRect(cx + bodyW / 2 - 2, baseY - bodyH, 2, bodyH);
-    g.fillStyle(0x5a4a36, 1).fillRect(cx - bodyW / 2, baseY - bodyH, bodyW, 1);
-    // columned facade
-    for (let i = -2; i <= 2; i += 1) {
-      g.fillStyle(0xd9c4a0, 1).fillRect(cx + i * 4 - 1, baseY - bodyH + 3, 2, bodyH - 5);
-    }
-    // drum
-    g.fillStyle(0xc9b68e, 1).fillRect(cx - r + 1, baseY - bodyH - 5, (r - 1) * 2, 5);
-    // dome
-    g.fillStyle(0x6a7d5a, 1).fillCircle(cx, baseY - bodyH - 5, r);
-    g.fillStyle(0x4f5f42, 1).fillCircle(cx + 2, baseY - bodyH - 5, r - 2);
-    g.fillStyle(0x8aa078, 1).fillRect(cx - r + 2, baseY - bodyH - 5 - r + 2, 2, 2);
-    // spire + flag
-    g.fillStyle(0x2a2a2a, 1).fillRect(cx, baseY - bodyH - 5 - r - 6, 1, 6);
-    g.fillStyle(0x7aa7e6, 1).fillRect(cx + 1, baseY - bodyH - 5 - r - 6, 3, 1);
-    g.fillStyle(0xf4f4f4, 1).fillRect(cx + 1, baseY - bodyH - 5 - r - 5, 3, 1);
-    g.fillStyle(0x7aa7e6, 1).fillRect(cx + 1, baseY - bodyH - 5 - r - 4, 3, 1);
-  };
-  drawDome(80, GROUND_Y, 14, 48, 40);
 
   // ---- Landmark: Casa Rosada-ish pink block (right) ----
   const prX = 690;
@@ -417,22 +350,14 @@ function drawSkyline(g) {
   // central arch
   g.fillStyle(0x5a2a32, 1).fillRect(prX + prW / 2 - 4, prTop + 10, 8, prH - 16);
   g.fillStyle(0x8c4a56, 1).fillRect(prX + prW / 2 - 5, prTop + 9, 10, 1);
-  // windows rows
   for (let row = 0; row < 2; row += 1) {
     const wy = prTop + 14 + row * 14;
     for (let col = 0; col < 5; col += 1) {
       const wx = prX + 6 + col * 14;
       if (Math.abs(wx - (prX + prW / 2)) < 10) continue;
       g.fillStyle(0x3a2838, 1).fillRect(wx, wy, 5, 6);
-      g.fillStyle(0x6a5060, 0.8).fillRect(wx, wy, 5, 1);
-      g.fillStyle(0x8c4a56, 1).fillRect(wx - 1, wy + 6, 7, 1);
     }
   }
-  // flag on roof
-  g.fillStyle(0x2a2a2a, 1).fillRect(prX + prW / 2, prTop - 18, 1, 8);
-  g.fillStyle(0x7aa7e6, 1).fillRect(prX + prW / 2 + 1, prTop - 18, 4, 1);
-  g.fillStyle(0xf4f4f4, 1).fillRect(prX + prW / 2 + 1, prTop - 17, 4, 1);
-  g.fillStyle(0x7aa7e6, 1).fillRect(prX + prW / 2 + 1, prTop - 16, 4, 1);
 
   // ---- Plaza grass behind/around the obelisco ----
   const PLAZA_X0 = LEFT_END - 10;
@@ -443,26 +368,15 @@ function drawSkyline(g) {
 
   // foreground ground: grass fills the full width except sidewalks on the flanks
   g.fillStyle(0x5c9a3e, 1).fillRect(0, GROUND_Y, GW, GH - GROUND_Y);
-  // grass texture speckles
-  for (let i = 0; i < 260; i += 1) {
-    const gx = Math.floor(rnd() * GW);
-    const gy = GROUND_Y + 2 + Math.floor(rnd() * (GH - GROUND_Y - 4));
+  for (let i = 0; i < 120; i += 1) {
     const c = [0x4a8432, 0x6db04a, 0x3d7028, 0x7cbe58][Math.floor(rnd() * 4)];
-    g.fillStyle(c, 0.8).fillRect(gx, gy, 1, 1);
+    g.fillStyle(c, 0.8).fillRect(Math.floor(rnd() * GW), GROUND_Y + 2 + Math.floor(rnd() * (GH - GROUND_Y - 4)), 1, 1);
   }
 
   // Curved sidewalk around the obelisco base
   g.fillStyle(0xd8cfbc, 1).fillEllipse(GW / 2, GROUND_Y + 6, 190, 34);
   g.fillStyle(0xb8ad95, 1).fillEllipse(GW / 2, GROUND_Y + 8, 190, 32);
   g.fillStyle(0xd8cfbc, 1).fillEllipse(GW / 2, GROUND_Y + 6, 170, 26);
-  // tile radial marks
-  for (let a = 0; a < 16; a += 1) {
-    const ang = (a / 16) * Math.PI * 2;
-    const rx = GW / 2 + Math.cos(ang) * 80;
-    const ry = GROUND_Y + 8 + Math.sin(ang) * 13;
-    g.fillStyle(0xa89a80, 0.7).fillRect(Math.floor(rx), Math.floor(ry), 1, 1);
-  }
-
   // Side sidewalks under flanking buildings
   g.fillStyle(0xc8bfaa, 1).fillRect(0, GROUND_Y, LEFT_END, 8);
   g.fillStyle(0xa89e88, 1).fillRect(0, GROUND_Y, LEFT_END, 1);
@@ -515,22 +429,17 @@ function drawSkyline(g) {
     drawTree(tx, ty, sz);
   }
 
-  // Bushes lining the plaza ring
-  for (let a = 0; a < 22; a += 1) {
-    const ang = Math.PI + (a / 22) * Math.PI;
+  for (let a = 0; a < 14; a += 1) {
+    const ang = Math.PI + (a / 14) * Math.PI;
     const rx = GW / 2 + Math.cos(ang) * 92;
     const ry = GROUND_Y + 8 + Math.sin(ang) * 16;
     g.fillStyle(0x2d5a22, 1).fillCircle(rx, ry - 2, 4);
     g.fillStyle(0x5ba04a, 1).fillCircle(rx - 1, ry - 3, 3);
-    g.fillStyle(0x8cd470, 0.8).fillCircle(rx - 2, ry - 4, 1);
   }
 
-  // A few flower specks
-  for (let i = 0; i < 30; i += 1) {
-    const fx = Math.floor(rnd() * GW);
-    const fy = GROUND_Y + 18 + Math.floor(rnd() * 50);
+  for (let i = 0; i < 16; i += 1) {
     const c = [0xff5a6a, 0xffd45a, 0xffffff, 0xd870ff][Math.floor(rnd() * 4)];
-    g.fillStyle(c, 1).fillRect(fx, fy, 1, 1);
+    g.fillStyle(c, 1).fillRect(Math.floor(rnd() * GW), GROUND_Y + 18 + Math.floor(rnd() * 50), 1, 1);
   }
 }
 
@@ -585,27 +494,15 @@ function buildObelisco(s) {
   const engine = s.add.container(0, -TEAR);
   const nz = s.add.graphics();
 
-  // Mount plate (wider than body, bolts it to the shaft)
   nz.fillStyle(0x16161e, 1).fillRect(-14, 0, 28, 3);
   nz.fillStyle(0x6e6e7c, 1).fillRect(-13, 0, 26, 2);
-  nz.fillStyle(0x9ea2b0, 1).fillRect(-13, 0, 2, 2);
-  nz.fillStyle(0x2a2a34, 1).fillRect(11, 0, 2, 2);
-  // Bolt dots
-  for (const x of [-10, -2, 6]) nz.fillStyle(0x040408, 1).fillRect(x, 1, 1, 1);
 
-  // Engine body / housing
   nz.fillStyle(0x0e0e14, 1).fillRect(-8, 3, 16, 14);
   nz.fillStyle(0x3c3c48, 1).fillRect(-7, 4, 14, 12);
   nz.fillStyle(0x7a7e8c, 1).fillRect(-7, 4, 2, 12);
-  nz.fillStyle(0x22222c, 1).fillRect(5, 4, 2, 12);
-  // Turbopump band
   nz.fillStyle(0x1c1c24, 1).fillRect(-7, 8, 14, 2);
-  nz.fillStyle(0x55586a, 1).fillRect(-7, 10, 14, 1);
-  // Copper fuel/coolant lines hugging the body
-  nz.fillStyle(0x6a3a18, 1).fillRect(-11, 5, 1, 12);
   nz.fillStyle(0xc48040, 1).fillRect(-10, 5, 1, 12);
   nz.fillStyle(0xc48040, 1).fillRect(9, 5, 1, 12);
-  nz.fillStyle(0x6a3a18, 1).fillRect(10, 5, 1, 12);
 
   // Bell nozzle — flared, narrow at throat, wide at exit
   const bellTop = 17;
@@ -616,15 +513,9 @@ function buildObelisco(s) {
     const curve = Math.pow(t, 0.62);
     const w = Math.max(4, Math.round(5 + curve * 22));
     const half = Math.floor(w / 2);
-    // outer dark silhouette (slightly wider for a crisp rim)
     nz.fillStyle(0x0b0b12, 1).fillRect(-half - 1, y, w + 2, 1);
-    // metallic bell body
     nz.fillStyle(0x50505e, 1).fillRect(-half, y, w, 1);
-    // left highlight
     nz.fillStyle(0x9ea2b2, 1).fillRect(-half, y, 1, 1);
-    // second highlight
-    if (w > 4) nz.fillStyle(0x7e8292, 1).fillRect(-half + 1, y, 1, 1);
-    // right shadow
     nz.fillStyle(0x262630, 1).fillRect(half - 1, y, 1, 1);
 
     // Interior exhaust glow — concentric, deeper as the bell flares
@@ -704,12 +595,8 @@ function showCinematicChrome(s) {
   const BAR = 56;
   const top = s.add.rectangle(GW / 2, -BAR / 2, GW, BAR, 0x000000, 1).setDepth(40);
   const bot = s.add.rectangle(GW / 2, GH + BAR / 2, GW, BAR, 0x000000, 1).setDepth(40);
-  const tag = s.add.text(GW - 14, GH - BAR / 2 + BAR + 6, '● CINEMATIC', {
-    fontFamily: 'monospace', fontSize: '14px', color: '#ff5050', fontStyle: 'bold',
-  }).setOrigin(1, 0.5).setDepth(41).setAlpha(0);
-  const skip = s.add.text(14, GH - BAR / 2 + BAR + 6, 'HOLD B TO SKIP INTRO', {
-    fontFamily: 'monospace', fontSize: '12px', color: '#c0c0c0', fontStyle: 'bold',
-  }).setOrigin(0, 0.5).setDepth(41).setAlpha(0);
+  const tag = s.add.text(GW - 14, GH - BAR / 2 + BAR + 6, '● CINEMATIC', TS(14, '#ff5050')).setOrigin(1, 0.5).setDepth(41).setAlpha(0);
+  const skip = s.add.text(14, GH - BAR / 2 + BAR + 6, 'HOLD B TO SKIP INTRO', TS(12, '#c0c0c0')).setOrigin(0, 0.5).setDepth(41).setAlpha(0);
   // Hold-to-skip progress bar, sits to the right of the SKIP label
   const meter = s.add.graphics().setDepth(41).setAlpha(0);
   s.cineChrome = { top, bot, tag, skip, meter, meterFrac: 0 };
@@ -919,11 +806,13 @@ function updateAscent(s, time, delta) {
   // Cloud spawning
   if (time > s.state.cloudFarNext) {
     spawnCloud(s, 'far');
-    s.state.cloudFarNext = time + 700 + Math.random() * 900;
+    if (Math.random() < 0.5) spawnCloud(s, 'far');
+    s.state.cloudFarNext = time + 260 + Math.random() * 380;
   }
   if (time > s.state.cloudNearNext) {
     spawnCloud(s, 'near');
-    s.state.cloudNearNext = time + 420 + Math.random() * 700;
+    if (Math.random() < 0.5) spawnCloud(s, 'near');
+    s.state.cloudNearNext = time + 160 + Math.random() * 280;
   }
 
   // Cull clouds scrolled off the bottom
@@ -1108,29 +997,26 @@ function onObstaclePass(s, prox, time) {
   if (!f) return;
   if (time - f.lastPassAt < 1200) f.combo += 1; else f.combo = 1;
   f.lastPassAt = time;
+  const chips = 10 + Math.round(prox * 20);
+  const gain = chips * f.combo;
+  f.score += gain;
+  f.scorePop = Math.min(1.2, f.scorePop + 0.9);
+  spawnScoreGain(s, gain, f.combo);
   sfxWhoosh(s, prox, f.combo);
   const shake = Math.min(0.035, 0.008 + prox * 0.018 + f.combo * 0.003);
   const dur = 90 + Math.min(180, f.combo * 20);
   s.cameras.main.shake(dur, shake);
-  if (f.combo >= 2) spawnComboPop(s, f.combo, prox);
 }
 
-function spawnComboPop(s, combo, prox) {
-  const f = s.fall;
+function spawnScoreGain(s, gain, combo) {
   const hue = combo >= 6 ? '#ffe060' : combo >= 4 ? '#ff9040' : '#60e0ff';
-  const size = 36 + Math.min(36, combo * 4);
-  const txt = s.add.text(GW / 2 + (Math.random() - 0.5) * 80, GH * 0.55,
-    'x' + combo, {
-      fontFamily: 'monospace', fontSize: size + 'px', color: hue,
-      fontStyle: 'bold', stroke: '#000', strokeThickness: 5,
-    }).setOrigin(0.5).setDepth(50).setScale(0.4);
-  if (s.fallView) s.fallView.add(txt);
+  const label = combo > 1 ? '+' + gain + ' x' + combo : '+' + gain;
+  const t = s.add.text(GW / 2 + 120, 44, label, TS(30, hue, '#000', 4)).setOrigin(0, 0.5).setDepth(50);
+  if (s.fallView) s.fallView.add(t);
+  s.tweens.add({ targets: t, x: t.x + 30, y: t.y - 26, duration: 520, ease: 'Cubic.easeOut' });
   s.tweens.add({
-    targets: txt, scale: 1.2, y: txt.y - 60, duration: 320, ease: 'Back.easeOut',
-  });
-  s.tweens.add({
-    targets: txt, alpha: 0, duration: 420, delay: 260,
-    onComplete: () => txt.destroy(),
+    targets: t, alpha: 0, duration: 380, delay: 200,
+    onComplete: () => t.destroy(),
   });
 }
 
@@ -1342,11 +1228,11 @@ function buildEarthView(s) {
     return dx * dx + dy * dy <= (r - m * PX) * (r - m * PX);
   };
   const patches = [
-    { a: -2.15, d: 7, R: 9, seed: 1.3 },
-    { a: -1.55, d: 5, R: 9, seed: 2.7 },
-    { a: -0.98, d: 6, R: 9, seed: 0.5 },
-    { a: -2.48, d: 16, R: 6, seed: 3.9 },
-    { a: -0.68, d: 16, R: 6, seed: 1.8 },
+    { a: -2.15, d: 8, R: 15, seed: 1.3 },
+    { a: -1.55, d: 6, R: 15, seed: 2.7 },
+    { a: -0.98, d: 7, R: 15, seed: 0.5 },
+    { a: -2.48, d: 18, R: 11, seed: 3.9 },
+    { a: -0.68, d: 18, R: 11, seed: 1.8 },
   ];
   patches.forEach((p) => {
     const depth = p.d * PX;
@@ -1477,14 +1363,8 @@ function triggerAscentFailureWarning(s) {
     },
   });
   s.cameras.main.shake(2400, 0.006);
-  const banner = s.add.text(GW / 2, 110, 'CRITICAL FAILURE', {
-    fontFamily: 'monospace', fontSize: '28px', color: '#ff4030',
-    fontStyle: 'bold', stroke: '#200000', strokeThickness: 5,
-  }).setOrigin(0.5).setDepth(11).setAlpha(0);
-  const sub = s.add.text(GW / 2, 138, 'ENGINE OVERLOAD', {
-    fontFamily: 'monospace', fontSize: '14px', color: '#ffd060',
-    fontStyle: 'bold', stroke: '#200000', strokeThickness: 3,
-  }).setOrigin(0.5).setDepth(11).setAlpha(0);
+  const banner = s.add.text(GW / 2, 110, 'CRITICAL FAILURE', TS(28, '#ff4030', '#200000', 5)).setOrigin(0.5).setDepth(11).setAlpha(0);
+  const sub = s.add.text(GW / 2, 138, 'ENGINE OVERLOAD', TS(14, '#ffd060', '#200000', 3)).setOrigin(0.5).setDepth(11).setAlpha(0);
   s.tweens.add({
     targets: [banner, sub], alpha: 1, duration: 160, yoyo: true, repeat: 13,
     ease: 'Sine.easeInOut',
@@ -1543,9 +1423,7 @@ function triggerOrbitHang(s, time) {
   bg.fillStyle(0xffffff, 1).fillTriangle(-10, 6, -4, 6, -8, 12);
   bg.lineStyle(1.5, 0x000000, 1).strokeTriangle(-10, 6, -4, 6, -8, 12);
   bubble.add(bg);
-  const tx = s.add.text(0, -2, 'oh no', {
-    fontFamily: 'monospace', fontSize: '11px', color: '#000000', fontStyle: 'bold',
-  }).setOrigin(0.5);
+  const tx = s.add.text(0, -2, 'oh no', TS(11, '#000000')).setOrigin(0.5);
   bubble.add(tx);
   bubble.setScale(0);
   s.tweens.add({ targets: bubble, scale: 1, duration: 180, ease: 'Back.easeOut' });
@@ -1576,10 +1454,7 @@ function startAtmosphericEntry(s, time) {
   s.flash.setAlpha(0);
   s.tweens.add({ targets: s.flash, alpha: 0.35, duration: 800, ease: 'Sine.easeIn' });
   // "REENTRY" label flashing in
-  const label = s.add.text(GW / 2, 48, 'REENTRY', {
-    fontFamily: 'monospace', fontSize: '22px', color: '#ffe080',
-    fontStyle: 'bold', stroke: '#401000', strokeThickness: 4,
-  }).setOrigin(0.5).setAlpha(0).setDepth(6);
+  const label = s.add.text(GW / 2, 48, 'REENTRY', TS(22, '#ffe080', '#401000', 4)).setOrigin(0.5).setAlpha(0).setDepth(6);
   s.tweens.add({ targets: label, alpha: 1, duration: 140, yoyo: true, repeat: 4 });
   s.reentryLabel = label;
   // Subtle shimmer via shake + rumble
@@ -1737,6 +1612,35 @@ const FAR_P = 5000;
 const RING_STEP = 50;
 const NUM_RINGS = 100;
 
+// OBSTACLE TUNING — all spacings in SECONDS. Z-distance is derived at
+// spawn via currentSpeed * 60 * seconds, keeping reaction windows fair at all speeds.
+const OBS_CFG = {
+  base: 2.0, tense: 1.2, relief: 3.5,
+  rest: 2.7, restEveryMin: 12, restEveryMax: 18,
+  tenseChance: 0.18,
+  revGap: 0.7, triGap: 0.6, compoundExit: 0.8,
+  trailLeadIn: 0.6, trailExit: 1.0, trailRingGap: 0.15,
+  trailGapW: 35 * Math.PI / 180,
+  trailLenMin: 6, trailLenMax: 10, trailLongMax: 14,
+  trailP4Weight: 0.10, trailP5Weight: 0.15,
+  straightSweep: Math.PI / 2, scurveSweep: Math.PI / 2,
+  spiralSweep: Math.PI, wobbleSweep: Math.PI / 3, wobbleAmp: 0.25,
+  trailSpiralGapMul: 1.5,
+  wideMul: 1.15, narrowMul: 0.7, twoMul: 0.85, sliverMul: 0.8,
+  threeMul: 0.72, rotMul: 1.0, counterMul: 0.95,
+  shrinkFromMul: 1.25, shrinkToMul: 0.5,
+  revGapMul: 0.9, triGapMul: 0.85,
+  phase2: 5, phase3: 12, phase4: 22, phase5: 35,
+};
+// Phase variant weights. Phases 4/5 get trails on top via trailP*Weight.
+const PHASE_WEIGHTS = {
+  1: { A: 60, B: 25, C: 15 },
+  2: { A: 28, B: 25, C: 20, D: 14, F: 13 },
+  3: { A: 14, B: 18, C: 14, D: 14, E: 10, F: 14, H: 10, I: 6 },
+  4: { B: 14, C: 12, D: 12, E: 8, F: 12, G: 8, H: 10, I: 12, J: 12 },
+  5: { B: 10, C: 10, D: 10, E: 6, F: 10, G: 12, H: 10, I: 14, J: 18 },
+};
+
 function startFall(s) {
   s.state.phase = 'fall';
   s._cinematicDone = true;
@@ -1814,21 +1718,12 @@ function startFall(s) {
   s.fall = s.fall || {};
   s.tipFire = tipFire;
 
-  const hud = s.add.text(GW / 2, 44, '0.0', {
-    fontFamily: 'monospace', fontSize: '56px', color: '#ffffff',
-    fontStyle: 'bold', stroke: '#000000', strokeThickness: 5,
-  }).setOrigin(0.5);
+  const hud = s.add.text(GW / 2, 44, '0.0', TS(56, '#ffffff', '#000000', 5)).setOrigin(0.5);
   s.fallView.add(hud);
 
   // Pre-tunnel mission briefing flash
-  const briefL1 = s.add.text(GW / 2, GH / 2 - 18, 'YOU ARE FALLING', {
-    fontFamily: 'monospace', fontSize: '40px', color: '#ffe060',
-    fontStyle: 'bold', stroke: '#3a0a00', strokeThickness: 6,
-  }).setOrigin(0.5).setAlpha(0);
-  const briefL2 = s.add.text(GW / 2, GH / 2 + 26, 'AVOID OBSTACLES', {
-    fontFamily: 'monospace', fontSize: '32px', color: '#ffffff',
-    fontStyle: 'bold', stroke: '#3a0a00', strokeThickness: 5,
-  }).setOrigin(0.5).setAlpha(0);
+  const briefL1 = s.add.text(GW / 2, GH / 2 - 18, 'YOU ARE FALLING', TS(40, '#ffe060', '#3a0a00', 6)).setOrigin(0.5).setAlpha(0);
+  const briefL2 = s.add.text(GW / 2, GH / 2 + 26, 'AVOID OBSTACLES', TS(32, '#ffffff', '#3a0a00', 5)).setOrigin(0.5).setAlpha(0);
   s.fallView.add(briefL1); s.fallView.add(briefL2);
   s.tweens.add({ targets: [briefL1, briefL2], alpha: 1, duration: 220, ease: 'Sine.easeOut' });
   s.tweens.add({ targets: [briefL1, briefL2], scale: 1.08, duration: 380, yoyo: true, repeat: 2, ease: 'Sine.easeInOut' });
@@ -1843,9 +1738,9 @@ function startFall(s) {
     gfx, rocket, hud, glow, shim,
     rot: 0, speed: 3, elapsed: 0, bank: 0,
     rings: [], obs: [], shards: [], embers: [], streaks: [],
-    nextSpawnAt: 0, nextStreakAt: 0, dead: false, over: null, showingOver: false,
-    bestTime: s._bestFallTime || 0,
-    combo: 0, lastPassAt: 0,
+    nextSpawnAt: 0, nextStreakAt: 0, nextRestAt: 15, dead: false, over: null, showingOver: false,
+    bestScore: s._bestScore || 0,
+    combo: 0, lastPassAt: 0, score: 0, scorePop: 0,
   };
   for (let i = 0; i < NUM_RINGS; i += 1) {
     s.fall.rings.push({ z: NEAR_P + i * RING_STEP, i, ph: Math.random() * 6.28 });
@@ -1858,12 +1753,16 @@ function startFall(s) {
   // Best from storage (once per session)
   if (!s._bestLoaded && window.platanusArcadeStorage) {
     s._bestLoaded = true;
+    s._lb = s._lb || [];
     try {
-      window.platanusArcadeStorage.get('obelisco.bestFall').then((r) => {
+      window.platanusArcadeStorage.get('obelisco.bestScore').then((r) => {
         if (r && r.found && typeof r.value === 'number') {
-          s._bestFallTime = r.value;
-          if (s.fall) s.fall.bestTime = r.value;
+          s._bestScore = r.value;
+          if (s.fall) s.fall.bestScore = r.value;
         }
+      }).catch(() => {});
+      window.platanusArcadeStorage.get('obelisco.lb').then((r) => {
+        if (r && r.found && Array.isArray(r.value)) s._lb = r.value.slice(0, 5);
       }).catch(() => {});
     } catch (_) {}
   }
@@ -1935,12 +1834,13 @@ function updateFall(s, time, delta) {
       const ob = f.obs[i];
       ob.z -= dz;
       if (ob.drift) ob.gapTheta += ob.drift * dt;
-      if (ob.swingAmp) {
-        ob.swingPh += ob.swingSpeed * dt;
-        ob.gapTheta += Math.cos(ob.swingPh) * ob.swingAmp * dt * 2.5;
+      if (ob.shrinkTo !== undefined) {
+        const span = Math.max(1, ob.shrinkZ0 - NEAR_P);
+        const k = Math.max(0, Math.min(1, 1 - (ob.z - NEAR_P) / span));
+        ob.gapW = ob.shrinkFrom + (ob.shrinkTo - ob.shrinkFrom) * k;
       }
       if (ob.z < NEAR_P - 40) {
-        if (!ob.hit && ob.type === 'wall' && ob.nearEdge !== undefined) {
+        if (!ob.hit && ob.nearEdge !== undefined) {
           const prox = Math.max(0, Math.min(1, 1 - ob.nearEdge / (ob.gapW * 0.5)));
           onObstaclePass(s, prox, time);
         }
@@ -1978,18 +1878,15 @@ function updateFall(s, time, delta) {
     }
 
     if (time > f.nextSpawnAt) {
-      const spawned = spawnFallObstacle(s);
-      const base = Math.max(1000, 2800 - f.elapsed * 22);
-      const extra = spawned && spawned.extraDelay ? spawned.extraDelay : 0;
-      f.nextSpawnAt = time + base + extra;
+      const res = spawnFallObstacle(s) || { delay: OBS_CFG.base };
+      f.nextSpawnAt = time + res.delay * 1000;
     }
 
     checkFallCollision(s);
 
-    f.hud.setText(f.elapsed.toFixed(1));
-    const p = f.elapsed > 60 ? 1 + 0.22 * Math.sin(time * 0.018)
-      : f.elapsed > 30 ? 1 + 0.1 * Math.sin(time * 0.011) : 1;
-    f.hud.setScale(p);
+    f.scorePop = Math.max(0, f.scorePop - dt * 3.6);
+    f.hud.setText(String(Math.floor(f.score)).padStart(5, '0'));
+    f.hud.setScale(1 + f.scorePop * 0.45);
 
     // Aerodynamic jitter + bank
     const jx = (Math.random() - 0.5) * 1.2;
@@ -2015,7 +1912,9 @@ function updateFall(s, time, delta) {
       if (sh.life <= 0 || sh.wz < NEAR_P || sh.wz > FAR_P) f.shards.splice(i, 1);
     }
     if (f.showingOver) {
-      if (pressed(s, 'P1_U') || pressed(s, 'P2_U') || pressed(s, 'START1') || pressed(s, 'START2')) {
+      if (f.enteringName) {
+        updateNameEntry(s);
+      } else if (pressed(s, 'P1_U') || pressed(s, 'P2_U') || pressed(s, 'START1') || pressed(s, 'START2')) {
         startFall(s);
         return;
       }
@@ -2026,144 +1925,149 @@ function updateFall(s, time, delta) {
   drawTunnel(s, time);
 }
 
+function pickWeightedKey(weights) {
+  const keys = Object.keys(weights);
+  let total = 0;
+  for (const k of keys) total += weights[k];
+  let r = Math.random() * total;
+  for (const k of keys) { r -= weights[k]; if (r < 0) return k; }
+  return keys[0];
+}
+
+function currentPhase(t) {
+  const c = OBS_CFG;
+  if (t < c.phase2) return 1;
+  if (t < c.phase3) return 2;
+  if (t < c.phase4) return 3;
+  if (t < c.phase5) return 4;
+  return 5;
+}
+
+function spawnTrail(s) {
+  const f = s.fall;
+  const c = OBS_CFG;
+  const phase = currentPhase(f.elapsed);
+  const zPerSec = f.speed * 60;
+  const shapes = phase >= 5 ? { straight: 35, scurve: 35, wobble: 25, spiral: 5 }
+                            : { straight: 55, wobble: 45 };
+  const shape = pickWeightedKey(shapes);
+  const maxLen = phase >= 5 ? c.trailLongMax : c.trailLenMax;
+  const len = c.trailLenMin + Math.floor(Math.random() * (maxLen - c.trailLenMin + 1));
+  const zOff = zPerSec * c.trailRingGap;
+  const leadZ = zPerSec * c.trailLeadIn;
+  const entry = Math.random() * Math.PI * 2;
+  const dir = Math.random() < 0.5 ? 1 : -1;
+  for (let i = 0; i < len; i += 1) {
+    const u = len > 1 ? i / (len - 1) : 0;
+    let theta = entry;
+    if (shape === 'straight') theta = entry + u * c.straightSweep * dir;
+    else if (shape === 'scurve') theta = entry + Math.sin(u * Math.PI * 2) * c.scurveSweep * dir;
+    else if (shape === 'spiral') theta = entry + u * c.spiralSweep * dir;
+    else theta = entry + u * c.wobbleSweep * dir + (Math.random() - 0.5) * c.wobbleAmp;
+    f.obs.push({
+      type: 'wall', z: FAR_P + leadZ + i * zOff,
+      gapTheta: theta,
+      gapW: c.trailGapW * (shape === 'spiral' ? c.trailSpiralGapMul : 1),
+      trail: true,
+    });
+  }
+  return c.trailLeadIn + (len - 1) * c.trailRingGap + c.trailExit;
+}
+
 function spawnFallObstacle(s) {
   const f = s.fall;
+  const c = OBS_CFG;
   const t = f.elapsed;
-  // Baseline gap width. Floor at ~2.2× tap step (0.45 rad) so any obstacle is reachable.
-  const gapW = Math.max(1.0, Math.PI / 2 - (Math.PI / 5) * Math.min(1, t / 60));
-  const roll = Math.random();
-  const perUnit = 1000 / Math.max(6, f.speed * 55);
+  const zPerSec = f.speed * 60;
+  // Baseline gap width narrows slightly over time. Floor ensures one-tap reachability.
+  const baseGap = Math.max(1.0, Math.PI / 2 - (Math.PI / 5) * Math.min(1, t / 60));
+  const phase = currentPhase(t);
 
-  let result = null;
+  // Inject rest gap periodically: empty tunnel for a breath.
+  if (t > f.nextRestAt) {
+    f.nextRestAt = t + c.restEveryMin + Math.random() * (c.restEveryMax - c.restEveryMin);
+    return { delay: c.rest };
+  }
 
-  if (t > 6 && roll < 0.14) {
-    // Spiral train — tap in one direction to follow
-    const count = 5 + Math.floor(Math.random() * 3);
-    const step = (Math.PI / 10) * (Math.random() < 0.5 ? 1 : -1);
-    const spacing = 480;
-    let theta = Math.random() * Math.PI * 2;
-    for (let i = 0; i < count; i += 1) {
-      f.obs.push({
-        type: 'wall', z: FAR_P + i * spacing,
-        gapTheta: theta, gapW: gapW * 1.45,
-      });
-      theta += step;
+  // Trails are rolled separately in phases 4/5.
+  const trailWeight = phase === 4 ? c.trailP4Weight : phase >= 5 ? c.trailP5Weight : 0;
+  let variant;
+  let extra = 0;
+  if (trailWeight > 0 && Math.random() < trailWeight) {
+    extra = spawnTrail(s);
+    return { delay: extra };
+  }
+  variant = pickWeightedKey(PHASE_WEIGHTS[phase]);
+
+  const rand2pi = () => Math.random() * Math.PI * 2;
+  const sign = () => (Math.random() < 0.5 ? -1 : 1);
+
+  if (variant === 'A') {
+    f.obs.push({ type: 'wall', z: FAR_P, gapTheta: rand2pi(), gapW: baseGap * c.wideMul });
+  } else if (variant === 'B') {
+    f.obs.push({ type: 'wall', z: FAR_P, gapTheta: rand2pi(), gapW: baseGap * c.narrowMul });
+  } else if (variant === 'C') {
+    const a = rand2pi();
+    f.obs.push({ type: 'wall', z: FAR_P, gapTheta: a, gapW: baseGap * c.twoMul, gap2: a + Math.PI });
+  } else if (variant === 'D') {
+    const a = rand2pi();
+    const w = baseGap * c.sliverMul;
+    f.obs.push({ type: 'wall', z: FAR_P, gapTheta: a, gapW: w, gap2: a + w * 1.25 });
+  } else if (variant === 'E') {
+    const a = rand2pi();
+    f.obs.push({
+      type: 'wall', z: FAR_P, gapTheta: a, gapW: baseGap * c.threeMul,
+      gap2: a + (Math.PI * 2) / 3, gap3: a + (Math.PI * 4) / 3,
+    });
+    extra = c.relief - c.base;
+  } else if (variant === 'F') {
+    f.obs.push({
+      type: 'wall', z: FAR_P, gapTheta: rand2pi(), gapW: baseGap * c.rotMul,
+      drift: sign() * (0.6 + Math.random() * 0.6),
+    });
+  } else if (variant === 'G') {
+    const zOff = zPerSec * c.revGap;
+    const sg = sign();
+    const w = baseGap * c.counterMul;
+    f.obs.push({ type: 'wall', z: FAR_P, gapTheta: rand2pi(), gapW: w,
+      drift: sg * (0.9 + Math.random() * 0.5) });
+    f.obs.push({ type: 'wall', z: FAR_P + zOff, gapTheta: rand2pi(), gapW: w,
+      drift: -sg * (0.9 + Math.random() * 0.5) });
+    extra = c.revGap + c.compoundExit;
+  } else if (variant === 'H') {
+    const from = baseGap * c.shrinkFromMul;
+    const to = baseGap * c.shrinkToMul;
+    f.obs.push({
+      type: 'wall', z: FAR_P, gapTheta: rand2pi(), gapW: from,
+      shrinkFrom: from, shrinkTo: to, shrinkZ0: FAR_P,
+    });
+  } else if (variant === 'I') {
+    const a = rand2pi();
+    const w = baseGap * c.revGapMul;
+    const sep = w * (1.1 + Math.random() * 0.2) * sign();
+    const zOff = zPerSec * c.revGap;
+    f.obs.push({ type: 'wall', z: FAR_P, gapTheta: a, gapW: w });
+    f.obs.push({ type: 'wall', z: FAR_P + zOff, gapTheta: a + sep, gapW: w });
+    extra = c.revGap + c.compoundExit;
+  } else if (variant === 'J') {
+    const a = rand2pi();
+    const w = baseGap * c.triGapMul;
+    const step = w * 1.05 * sign();
+    const zOff = zPerSec * c.triGap;
+    for (let i = 0; i < 3; i += 1) {
+      f.obs.push({ type: 'wall', z: FAR_P + i * zOff, gapTheta: a + step * i, gapW: w });
     }
-    result = { extraDelay: (count * spacing + 900) * perUnit };
-  } else if (t > 12 && roll < 0.22) {
-    // Zigzag train — alternate sides, tap-tap-tap left/right
-    const count = 5 + Math.floor(Math.random() * 3);
-    const spacing = 640;
-    const a = Math.random() * Math.PI * 2;
-    // Separation must exceed the gap angular width or the two gaps overlap and the
-    // player can sit in the middle without ever moving. Force a real tap:
-    // centers are 1.05×–1.35× the gap width apart (still reachable in one tap).
-    const w = gapW * 1.3;
-    const sep = w * (1.05 + Math.random() * 0.3);
-    const b = a + sep * (Math.random() < 0.5 ? 1 : -1);
-    for (let i = 0; i < count; i += 1) {
-      f.obs.push({
-        type: 'wall', z: FAR_P + i * spacing,
-        gapTheta: i % 2 === 0 ? a : b, gapW: w,
-      });
-    }
-    result = { extraDelay: (count * spacing + 900) * perUnit };
-  } else if (t > 15 && roll < 0.28) {
-    // Converging spiral — spiral that tightens as it goes
-    const count = 6;
-    const step = (Math.PI / 9) * (Math.random() < 0.5 ? 1 : -1);
-    const spacing = 460;
-    let theta = Math.random() * Math.PI * 2;
-    for (let i = 0; i < count; i += 1) {
-      const tightness = 1.5 - i * 0.1;
-      f.obs.push({
-        type: 'wall', z: FAR_P + i * spacing,
-        gapTheta: theta, gapW: gapW * tightness,
-      });
-      theta += step;
-    }
-    result = { extraDelay: (count * spacing + 1000) * perUnit };
-  } else if (t > 4 && roll < 0.38) {
-    // Drifting gap — slides around while approaching
-    f.obs.push({
-      type: 'wall', z: FAR_P,
-      gapTheta: Math.random() * Math.PI * 2,
-      gapW, drift: (Math.random() < 0.5 ? -1 : 1) * (0.4 + Math.random() * 0.5),
-    });
-  } else if (t > 18 && roll < 0.45) {
-    // Fast spinner — high drift, wider gap
-    f.obs.push({
-      type: 'wall', z: FAR_P,
-      gapTheta: Math.random() * Math.PI * 2,
-      gapW: gapW * 1.3, drift: (Math.random() < 0.5 ? -1 : 1) * (1.6 + Math.random() * 0.8),
-    });
-  } else if (t > 10 && roll < 0.52) {
-    // Pendulum gap — swings back and forth
-    f.obs.push({
-      type: 'wall', z: FAR_P,
-      gapTheta: Math.random() * Math.PI * 2, gapW,
-      swingAmp: 0.8 + Math.random() * 0.6,
-      swingPh: Math.random() * Math.PI * 2,
-      swingSpeed: 2.0 + Math.random() * 1.5,
-    });
-  } else if (t > 3 && roll < 0.62) {
-    // Double-gap wall
-    const base = Math.random() * Math.PI * 2;
-    const narrow = gapW * 0.85;
-    const offset = Math.PI * (0.55 + Math.random() * 0.9);
-    f.obs.push({ type: 'wall', z: FAR_P, gapTheta: base, gapW: narrow, gap2: base + offset });
-  } else if (t > 20 && roll < 0.8) {
-    // Triple gap at 120°
-    const base = Math.random() * Math.PI * 2;
-    const narrow = Math.max(0.7, gapW * 0.7);
-    f.obs.push({
-      type: 'wall', z: FAR_P, gapTheta: base, gapW: narrow,
-      gap2: base + (Math.PI * 2) / 3, gap3: base + (Math.PI * 4) / 3,
-    });
-  } else if (t > 30 && roll < 0.86) {
-    // Quad gap at 90° — spinning
-    const base = Math.random() * Math.PI * 2;
-    const narrow = Math.max(0.65, gapW * 0.65);
-    f.obs.push({
-      type: 'wall', z: FAR_P, gapTheta: base, gapW: narrow,
-      gap2: base + Math.PI / 2, gap3: base + Math.PI, gap4: base + 3 * Math.PI / 2,
-      drift: (Math.random() < 0.5 ? -1 : 1) * 0.8,
-    });
-  } else if (t > 14 && roll < 0.92) {
-    // Pinwheel — triple gap that also spins
-    const base = Math.random() * Math.PI * 2;
-    const narrow = Math.max(0.7, gapW * 0.72);
-    f.obs.push({
-      type: 'wall', z: FAR_P, gapTheta: base, gapW: narrow,
-      gap2: base + (Math.PI * 2) / 3, gap3: base + (Math.PI * 4) / 3,
-      drift: (Math.random() < 0.5 ? -1 : 1) * (0.7 + Math.random() * 0.5),
-    });
-  } else if (t > 25 && roll < 0.97) {
-    // Staggered pair
-    const g1 = Math.random() * Math.PI * 2;
-    f.obs.push({ type: 'wall', z: FAR_P, gapTheta: g1, gapW });
-    f.obs.push({ type: 'wall', z: FAR_P + 180, gapTheta: g1 + Math.PI, gapW });
-    result = { extraDelay: (180 + 700) * perUnit };
+    extra = c.triGap * 2 + c.compoundExit;
   } else {
-    f.obs.push({
-      type: 'wall', z: FAR_P,
-      gapTheta: Math.random() * Math.PI * 2, gapW,
-    });
+    f.obs.push({ type: 'wall', z: FAR_P, gapTheta: rand2pi(), gapW: baseGap });
   }
-  if (t > 30) {
-    const n = 1 + Math.floor(Math.random() * 2);
-    for (let i = 0; i < n; i += 1) {
-      if (Math.random() < 0.55) {
-        f.obs.push({
-          type: 'debris',
-          z: FAR_P - 200 - Math.random() * 400,
-          theta: Math.random() * Math.PI * 2,
-          width: Math.PI / 10,
-        });
-      }
-    }
-  }
-  return result;
+
+  // Decide spacing to NEXT obstacle: tense waves after phase 1, relief already baked in for E.
+  let delay;
+  if (variant === 'E') delay = c.relief;
+  else if (phase >= 2 && Math.random() < c.tenseChance) delay = c.tense;
+  else delay = c.base;
+  return { delay: delay + extra };
 }
 
 function checkFallCollision(s) {
@@ -2175,23 +2079,19 @@ function checkFallCollision(s) {
     const eff = (o.type === 'wall' ? o.gapTheta : o.theta) + f.rot;
     let d = rocketAng - eff;
     d = ((d % (Math.PI * 2)) + Math.PI * 3) % (Math.PI * 2) - Math.PI;
-    if (o.type === 'wall') {
-      let minAbs = Math.abs(d);
-      for (const gk of ['gap2', 'gap3', 'gap4']) {
-        if (o[gk] === undefined) continue;
-        let dx = rocketAng - (o[gk] + f.rot);
-        dx = ((dx % (Math.PI * 2)) + Math.PI * 3) % (Math.PI * 2) - Math.PI;
-        if (Math.abs(dx) < minAbs) minAbs = Math.abs(dx);
-      }
-      const through = minAbs <= o.gapW / 2;
-      if (through) {
-        const margin = o.gapW / 2 - minAbs;
-        if (o.nearEdge === undefined || margin < o.nearEdge) o.nearEdge = margin;
-      }
-      if (!through) { killFall(s); o.hit = true; break; }
-    } else if (Math.abs(d) < o.width / 2) {
-      killFall(s); o.hit = true; break;
+    let minAbs = Math.abs(d);
+    for (const gk of ['gap2', 'gap3', 'gap4']) {
+      if (o[gk] === undefined) continue;
+      let dx = rocketAng - (o[gk] + f.rot);
+      dx = ((dx % (Math.PI * 2)) + Math.PI * 3) % (Math.PI * 2) - Math.PI;
+      if (Math.abs(dx) < minAbs) minAbs = Math.abs(dx);
     }
+    const through = minAbs <= o.gapW / 2;
+    if (through) {
+      const margin = o.gapW / 2 - minAbs;
+      if (o.nearEdge === undefined || margin < o.nearEdge) o.nearEdge = margin;
+    }
+    if (!through) { killFall(s); o.hit = true; break; }
   }
 }
 
@@ -2315,7 +2215,7 @@ const WALL_INNER = 0.55;
 
 function drawFallObstacle(s, g, o, scale, cx, cy) {
   const rot = s.fall.rot;
-  if (o.type === 'wall') {
+  {
     const sF = FOCAL / o.z;
     const Ro = TUNNEL_R;
     const Ri = TUNNEL_R * WALL_INNER;
@@ -2354,8 +2254,8 @@ function drawFallObstacle(s, g, o, scale, cx, cy) {
     };
 
     const shOff = Math.max(2, 6 * sF);
-    const face = fogMix(0xfff0c8, o.z);
-    const rim = fogMix(0xffffff, o.z);
+    const face = fogMix(o.trail ? 0xc8dcff : 0xfff0c8, o.z);
+    const rim = fogMix(o.trail ? 0xc0f8ff : 0xffffff, o.z);
     drawDonutSeg(shOff, shOff, 0x000000, 0.55, Ro * sF, Ri * sF);
     drawDonutSeg(0, 0, face, 1, Ro * sF, Ri * sF);
 
@@ -2366,29 +2266,17 @@ function drawFallObstacle(s, g, o, scale, cx, cy) {
       g.strokePath();
     }
 
+    const edgeLW = Math.max(1, (o.trail ? 3.4 : 2.5) * sF);
+    g.lineStyle(edgeLW, rim, 1);
     for (const seg of segs) {
       for (const edge of [seg.s, seg.e]) {
-        const c = Math.cos(edge), sn = Math.sin(edge);
-        const x1 = cx + c * Ri * sF, y1 = cy + sn * Ri * sF;
-        const x2 = cx + c * Ro * sF, y2 = cy + sn * Ro * sF;
-        g.lineStyle(Math.max(1, 2.5 * sF), rim, 1);
-        g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.strokePath();
+        const cc = Math.cos(edge), sn = Math.sin(edge);
+        g.beginPath();
+        g.moveTo(cx + cc * Ri * sF, cy + sn * Ri * sF);
+        g.lineTo(cx + cc * Ro * sF, cy + sn * Ro * sF);
+        g.strokePath();
       }
     }
-  } else {
-    const eff = o.theta + rot;
-    const wx = Math.cos(eff) * TUNNEL_R;
-    const wy = Math.sin(eff) * TUNNEL_R;
-    const sx = cx + wx * scale;
-    const sy = cy + wy * scale;
-    const sz = Math.max(2, 18 * scale);
-    // Dark metallic chunk with glowing hot edges
-    const dz = o.z;
-    g.fillStyle(fogMix(0x0c0604, dz), 1).fillRect(sx - sz / 2, sy - sz / 2, sz, sz);
-    g.fillStyle(fogMix(0x3a1810, dz), 1).fillRect(sx - sz / 2 + 1, sy - sz / 2 + 1, sz - 2, sz - 2);
-    g.fillStyle(fogMix(0xff9030, dz), 0.9).fillRect(sx - sz / 2, sy - sz / 2, sz, 1);
-    g.fillStyle(fogMix(0xffdc80, dz), 1).fillRect(sx - sz / 2, sy - sz / 2, Math.max(1, sz * 0.35), 1);
-    g.fillStyle(fogMix(0x802010, dz), 1).fillRect(sx - sz / 2, sy + sz / 2 - 1, sz, 1);
   }
 }
 
@@ -2434,36 +2322,91 @@ function killFall(s) {
   s.time.delayedCall(1800, () => showFallOver(s));
 }
 
+const LB_A = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+
 function showFallOver(s) {
   const f = s.fall;
-  const newBest = f.elapsed > f.bestTime;
-  const best = Math.max(f.bestTime, f.elapsed);
-  f.bestTime = best;
-  s._bestFallTime = best;
-  if (newBest && window.platanusArcadeStorage) {
-    try { window.platanusArcadeStorage.set('obelisco.bestFall', best); } catch (_) {}
+  const sc = Math.floor(f.score);
+  const best = Math.max(f.bestScore, sc);
+  f.bestScore = best;
+  s._bestScore = best;
+  if (sc > 0 && window.platanusArcadeStorage) {
+    try { window.platanusArcadeStorage.set('obelisco.bestScore', best); } catch (_) {}
   }
+  buildOverPanel(s, sc, best, true);
+  f.showingOver = true;
+}
 
+function buildOverPanel(s, sc, best, entry, hi) {
+  const f = s.fall;
+  if (f.over) f.over.destroy();
   const over = s.add.container(GW / 2, GH / 2).setDepth(40);
-  over.add(s.add.rectangle(0, 0, GW, GH, 0x000000, 0.65));
-  over.add(s.add.text(0, -110, 'CRASHED', {
-    fontFamily: 'monospace', fontSize: '52px', color: '#ff4060',
-    fontStyle: 'bold', stroke: '#000', strokeThickness: 6,
-  }).setOrigin(0.5));
-  over.add(s.add.text(0, -30, `${f.elapsed.toFixed(1)}s`, {
-    fontFamily: 'monospace', fontSize: '96px', color: '#ffffff',
-    fontStyle: 'bold', stroke: '#000', strokeThickness: 6,
-  }).setOrigin(0.5));
-  over.add(s.add.text(0, 40, `BEST ${best.toFixed(1)}s${newBest ? ' NEW!' : ''}`, {
-    fontFamily: 'monospace', fontSize: '26px',
-    color: newBest ? '#50ff80' : '#ffde50', fontStyle: 'bold',
-  }).setOrigin(0.5));
-  const pr = s.add.text(0, 120, 'PRESS ↑ TO FALL AGAIN', {
-    fontFamily: 'monospace', fontSize: '22px', color: '#ffffff', fontStyle: 'bold',
-  }).setOrigin(0.5);
-  over.add(pr);
-  s.tweens.add({ targets: pr, alpha: 0.35, duration: 550, yoyo: true, repeat: -1 });
+  over.add(s.add.rectangle(0, 0, GW, GH, 0x000000, 0.72));
+  over.add(s.add.text(0, -220, 'CRASHED', TS(44, '#ff4060', '#000', 6)).setOrigin(0.5));
+  over.add(s.add.text(0, -160, String(sc).padStart(5, '0'), TS(60, '#ffffff', '#000', 5)).setOrigin(0.5));
+  over.add(s.add.text(0, -110, `BEST ${String(best).padStart(5, '0')}`, TS(20, '#ffde50')).setOrigin(0.5));
+  if (entry) {
+    over.add(s.add.text(0, -60, 'ENTER INITIALS', TS(20, '#ffde50')).setOrigin(0.5));
+    const texts = [];
+    for (let i = 0; i < 3; i += 1) {
+      const t = s.add.text(-56 + i * 56, 10, 'A', TS(56, '#ffffff', '#000', 5)).setOrigin(0.5);
+      over.add(t); texts.push(t);
+    }
+    const cursor = s.add.rectangle(-56, 48, 42, 4, 0xffde50);
+    over.add(cursor);
+    s.tweens.add({ targets: cursor, alpha: 0.25, duration: 360, yoyo: true, repeat: -1 });
+    over.add(s.add.text(0, 128, '↑↓ LETTER  ←→ POS  BTN/START OK', TS(14, '#cccccc')).setOrigin(0.5));
+    f.entry = { idx: [0, 0, 0], pos: 0, sc, texts, cursor };
+    f.enteringName = true;
+  } else {
+    drawLeaderboard(s, over, s._lb || [], hi);
+    const pr = s.add.text(0, 220, 'PRESS ↑ TO FALL AGAIN', TS(22, '#ffffff')).setOrigin(0.5);
+    over.add(pr);
+    s.tweens.add({ targets: pr, alpha: 0.35, duration: 550, yoyo: true, repeat: -1 });
+  }
   if (s.fallView) s.fallView.add(over);
   f.over = over;
-  f.showingOver = true;
+}
+
+function drawLeaderboard(s, over, lb, hi) {
+  over.add(s.add.text(0, -60, 'LEADERBOARD', TS(22, '#ffde50')).setOrigin(0.5));
+  if (!lb.length) {
+    over.add(s.add.text(0, 40, 'NO ENTRIES YET', TS(18, '#888888')).setOrigin(0.5));
+    return;
+  }
+  for (let i = 0; i < Math.min(5, lb.length); i += 1) {
+    const e = lb[i];
+    const c = i === hi ? '#50ff80' : '#ffffff';
+    const y = -20 + i * 30;
+    over.add(s.add.text(-140, y, (i + 1) + '.', TS(20, c)).setOrigin(0, 0.5));
+    over.add(s.add.text(-100, y, e.name, TS(20, c)).setOrigin(0, 0.5));
+    over.add(s.add.text(140, y, String(e.score).padStart(5, '0'), TS(20, c)).setOrigin(1, 0.5));
+  }
+}
+
+function updateNameEntry(s) {
+  const e = s.fall.entry;
+  const bump = (d) => {
+    e.idx[e.pos] = (e.idx[e.pos] + 26 + d) % 26;
+    e.texts[e.pos].setText(LB_A[e.idx[e.pos]]);
+  };
+  if (pressed(s, 'P1_U') || pressed(s, 'P2_U')) bump(1);
+  if (pressed(s, 'P1_D') || pressed(s, 'P2_D')) bump(-1);
+  if (pressed(s, 'P1_L') || pressed(s, 'P2_L')) { e.pos = (e.pos + 2) % 3; e.cursor.x = -56 + e.pos * 56; }
+  if (pressed(s, 'P1_R') || pressed(s, 'P2_R')) { e.pos = (e.pos + 1) % 3; e.cursor.x = -56 + e.pos * 56; }
+  if (pressed(s, 'P1_1') || pressed(s, 'P2_1') || pressed(s, 'START1') || pressed(s, 'START2')) submitName(s);
+}
+
+function submitName(s) {
+  const f = s.fall; const e = f.entry;
+  const name = e.idx.map((x) => LB_A[x]).join('');
+  const lb = (s._lb || []).concat([{ name, score: e.sc }])
+    .sort((a, b) => b.score - a.score).slice(0, 5);
+  s._lb = lb;
+  if (window.platanusArcadeStorage) {
+    try { window.platanusArcadeStorage.set('obelisco.lb', lb); } catch (_) {}
+  }
+  const hi = lb.findIndex((x) => x.name === name && x.score === e.sc);
+  f.enteringName = false;
+  buildOverPanel(s, e.sc, f.bestScore, false, hi);
 }
