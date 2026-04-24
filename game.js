@@ -207,6 +207,13 @@ function setupControls(s) {
   });
 }
 
+function anyInput(s, mode) {
+  for (const k in CABINET_KEYS) {
+    if (mode === 2 && /_[UDLR]$/.test(k)) continue;
+    if (mode === 0 ? s.controls.held[k] : pressed(s, k)) return true;
+  }
+  return false;
+}
 function pressed(s, code) {
   if (s.controls.pressed[code]) {
     s.controls.pressed[code] = false;
@@ -472,6 +479,35 @@ function drawObeliscoUpper(g, ob) {
     g.fillStyle(0x231b0a, 1).fillRect(-3 + j * 4, -OB_H + CAP_H + 22 + i * 8, 2, 3);
 }
 
+function drawEngine(nz) {
+  nz.fillStyle(0x16161e, 1).fillRect(-14, 0, 28, 3);
+  nz.fillStyle(0x6e6e7c, 1).fillRect(-13, 0, 26, 2);
+  nz.fillStyle(0x0e0e14, 1).fillRect(-8, 3, 16, 14);
+  nz.fillStyle(0x3c3c48, 1).fillRect(-7, 4, 14, 12);
+  nz.fillStyle(0x7a7e8c, 1).fillRect(-7, 4, 2, 12);
+  nz.fillStyle(0x1c1c24, 1).fillRect(-7, 8, 14, 2);
+  nz.fillStyle(0xc48040, 1).fillRect(-10, 5, 1, 12);
+  nz.fillStyle(0xc48040, 1).fillRect(9, 5, 1, 12);
+  const bellTop = 17, bellH = 34;
+  for (let dy = 0; dy < bellH; dy += 1) {
+    const y = bellTop + dy;
+    const t = dy / (bellH - 1);
+    const curve = Math.pow(t, 0.62);
+    const w = Math.max(4, Math.round(5 + curve * 22));
+    const half = Math.floor(w / 2);
+    nz.fillStyle(0x0b0b12, 1).fillRect(-half - 1, y, w + 2, 1);
+    nz.fillStyle(0x50505e, 1).fillRect(-half, y, w, 1);
+    nz.fillStyle(0x9ea2b2, 1).fillRect(-half, y, 1, 1);
+    nz.fillStyle(0x262630, 1).fillRect(half - 1, y, 1, 1);
+    if (w >= 6) { const iw = w - 4; nz.fillStyle(0x6a0e00, 1).fillRect(-Math.floor(iw / 2), y, iw, 1); }
+    if (w >= 9) { const iw = w - 6; nz.fillStyle(0xc23a00, 1).fillRect(-Math.floor(iw / 2), y, iw, 1); }
+    if (w >= 13 && t > 0.25) { const iw = w - 10; nz.fillStyle(0xff9820, 1).fillRect(-Math.floor(iw / 2), y, iw, 1); }
+    if (w >= 17 && t > 0.45) { const iw = w - 14; nz.fillStyle(0xffe488, 1).fillRect(-Math.floor(iw / 2), y, iw, 1); }
+  }
+  nz.fillStyle(0x13131a, 0.85).fillRect(-9, 26, 18, 1);
+  nz.fillStyle(0x13131a, 0.85).fillRect(-13, bellTop + bellH - 2, 26, 1);
+}
+
 function buildObelisco(s) {
   const { TEAR, TOP_W, BASE_W, OB_H } = s.ob;
   const upper = s.add.graphics();
@@ -493,53 +529,9 @@ function buildObelisco(s) {
   // content grows downward. KSP-style: mount plate, body, bell nozzle.
   const engine = s.add.container(0, -TEAR);
   const nz = s.add.graphics();
-
-  nz.fillStyle(0x16161e, 1).fillRect(-14, 0, 28, 3);
-  nz.fillStyle(0x6e6e7c, 1).fillRect(-13, 0, 26, 2);
-
-  nz.fillStyle(0x0e0e14, 1).fillRect(-8, 3, 16, 14);
-  nz.fillStyle(0x3c3c48, 1).fillRect(-7, 4, 14, 12);
-  nz.fillStyle(0x7a7e8c, 1).fillRect(-7, 4, 2, 12);
-  nz.fillStyle(0x1c1c24, 1).fillRect(-7, 8, 14, 2);
-  nz.fillStyle(0xc48040, 1).fillRect(-10, 5, 1, 12);
-  nz.fillStyle(0xc48040, 1).fillRect(9, 5, 1, 12);
-
-  // Bell nozzle — flared, narrow at throat, wide at exit
+  drawEngine(nz);
   const bellTop = 17;
   const bellH = 34;
-  for (let dy = 0; dy < bellH; dy += 1) {
-    const y = bellTop + dy;
-    const t = dy / (bellH - 1);
-    const curve = Math.pow(t, 0.62);
-    const w = Math.max(4, Math.round(5 + curve * 22));
-    const half = Math.floor(w / 2);
-    nz.fillStyle(0x0b0b12, 1).fillRect(-half - 1, y, w + 2, 1);
-    nz.fillStyle(0x50505e, 1).fillRect(-half, y, w, 1);
-    nz.fillStyle(0x9ea2b2, 1).fillRect(-half, y, 1, 1);
-    nz.fillStyle(0x262630, 1).fillRect(half - 1, y, 1, 1);
-
-    // Interior exhaust glow — concentric, deeper as the bell flares
-    if (w >= 6) {
-      const iw = w - 4;
-      nz.fillStyle(0x6a0e00, 1).fillRect(-Math.floor(iw / 2), y, iw, 1);
-    }
-    if (w >= 9) {
-      const iw = w - 6;
-      nz.fillStyle(0xc23a00, 1).fillRect(-Math.floor(iw / 2), y, iw, 1);
-    }
-    if (w >= 13 && t > 0.25) {
-      const iw = w - 10;
-      nz.fillStyle(0xff9820, 1).fillRect(-Math.floor(iw / 2), y, iw, 1);
-    }
-    if (w >= 17 && t > 0.45) {
-      const iw = w - 14;
-      nz.fillStyle(0xffe488, 1).fillRect(-Math.floor(iw / 2), y, iw, 1);
-    }
-  }
-  // Reinforcement bands
-  nz.fillStyle(0x13131a, 0.85).fillRect(-9, 26, 18, 1);
-  nz.fillStyle(0x13131a, 0.85).fillRect(-13, bellTop + bellH - 2, 26, 1);
-
   engine.add(nz);
   engine.setVisible(false);
   s.ob.engine = engine;
@@ -562,8 +554,7 @@ function update(time, delta) {
 
   // Hold any action / start button for ~0.7s during the cinematic to skip it.
   if (ph === 'countdown' || ph === 'liftoff' || ph === 'ascent' || ph === 'orbit') {
-    const h = s.controls.held;
-    const holding = h.P1_1 || h.P1_2 || h.P2_1 || h.P2_2 || h.START1 || h.START2;
+    const holding = anyInput(s, 0);
     const HOLD_MS = 700;
     s.state.skipHoldMs = holding ? (s.state.skipHoldMs || 0) + delta : 0;
     updateSkipMeter(s, Math.min(1, (s.state.skipHoldMs || 0) / HOLD_MS));
@@ -1721,6 +1712,37 @@ function startFall(s) {
   const hud = s.add.text(GW / 2, 44, '0.0', TS(56, '#ffffff', '#000000', 5)).setOrigin(0.5);
   s.fallView.add(hud);
 
+  const mX = 768, mTop = 160, mBot = 440, earthR = 12;
+  const mFrame = s.add.graphics();
+  mFrame.fillStyle(0x604020, 0.7).fillRect(mX - 1, mTop, 2, mBot - mTop);
+  mFrame.fillStyle(0x2a88c0, 1).fillCircle(mX, mBot + 14, earthR);
+  mFrame.fillStyle(0x3aa050, 1).fillCircle(mX - 3, mBot + 12, 3);
+  mFrame.fillStyle(0x3aa050, 1).fillCircle(mX + 4, mBot + 16, 2);
+  s.fallView.add(mFrame);
+  const mRocket = s.add.container(mX, mTop);
+  const mrg = s.add.graphics();
+  drawObeliscoUpper(mrg, s.ob);
+  mRocket.add(mrg);
+  const meg = s.add.graphics();
+  meg.y = -s.ob.TEAR;
+  drawEngine(meg);
+  mRocket.add(meg);
+  mRocket.setScale(0.4).setRotation(Math.PI);
+  s.fallView.add(mRocket);
+  const mFire = s.add.particles(0, 0, 'px3', {
+    lifespan: { min: 120, max: 280 },
+    speed: { min: 20, max: 60 },
+    angle: { min: 260, max: 280 },
+    scale: { start: 0.9, end: 0 },
+    alpha: { start: 1, end: 0 },
+    frequency: 35,
+    tint: [0xfff1a8, 0xff9a32, 0xff3a00],
+    blendMode: 'ADD',
+  });
+  s.fallView.add(mFire);
+  s.fall = s.fall || {};
+  s.fall.meter = { mRocket, mFire, mTop, mBot, earthR };
+
   // Pre-tunnel mission briefing flash
   const briefL1 = s.add.text(GW / 2, GH / 2 - 18, 'YOU ARE FALLING', TS(40, '#ffe060', '#3a0a00', 6)).setOrigin(0.5).setAlpha(0);
   const briefL2 = s.add.text(GW / 2, GH / 2 + 26, 'AVOID OBSTACLES', TS(32, '#ffffff', '#3a0a00', 5)).setOrigin(0.5).setAlpha(0);
@@ -1734,8 +1756,9 @@ function startFall(s) {
     });
   });
 
+  const _meterRef = s.fall && s.fall.meter;
   s.fall = {
-    gfx, rocket, hud, glow, shim,
+    gfx, rocket, hud, glow, shim, meter: _meterRef,
     rot: 0, speed: 3, elapsed: 0, bank: 0,
     rings: [], obs: [], shards: [], embers: [], streaks: [],
     nextSpawnAt: 0, nextStreakAt: 0, nextRestAt: 15, dead: false, over: null, showingOver: false,
@@ -1900,6 +1923,16 @@ function updateFall(s, time, delta) {
       s.tipFire.x = f.rocket.x;
       s.tipFire.y = f.rocket.y - 520;
     }
+    if (f.meter) {
+      const m = f.meter, e = f.elapsed;
+      const frac = (e * e) / (e * e + 900);
+      const ry = m.mTop + frac * ((m.mBot - m.mTop) - m.earthR - 4) + Math.sin(time * 0.008) * 1.2;
+      m.mRocket.y = ry;
+      m.mFire.x = m.mRocket.x;
+      m.mFire.y = ry + 54;
+      if (s.tipFire) s.tipFire.frequency = Math.max(2, 8 - frac * 6);
+      m.mFire.frequency = Math.max(8, 35 - frac * 26);
+    }
     f.glow.clear();
   } else {
     for (let i = f.shards.length - 1; i >= 0; i -= 1) {
@@ -1914,7 +1947,7 @@ function updateFall(s, time, delta) {
     if (f.showingOver) {
       if (f.enteringName) {
         updateNameEntry(s);
-      } else if (pressed(s, 'P1_U') || pressed(s, 'P2_U') || pressed(s, 'START1') || pressed(s, 'START2')) {
+      } else if (anyInput(s, 1)) {
         startFall(s);
         return;
       }
@@ -2394,7 +2427,7 @@ function updateNameEntry(s) {
   if (pressed(s, 'P1_D') || pressed(s, 'P2_D')) bump(-1);
   if (pressed(s, 'P1_L') || pressed(s, 'P2_L')) { e.pos = (e.pos + 2) % 3; e.cursor.x = -56 + e.pos * 56; }
   if (pressed(s, 'P1_R') || pressed(s, 'P2_R')) { e.pos = (e.pos + 1) % 3; e.cursor.x = -56 + e.pos * 56; }
-  if (pressed(s, 'P1_1') || pressed(s, 'P2_1') || pressed(s, 'START1') || pressed(s, 'START2')) submitName(s);
+  if (anyInput(s, 2)) submitName(s);
 }
 
 function submitName(s) {
