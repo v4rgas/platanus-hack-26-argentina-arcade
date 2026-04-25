@@ -1606,30 +1606,26 @@ const NUM_RINGS = 100;
 // OBSTACLE TUNING — all spacings in SECONDS. Z-distance is derived at
 // spawn via currentSpeed * 60 * seconds, keeping reaction windows fair at all speeds.
 const OBS_CFG = {
-  base: 2.0, tense: 1.2, relief: 3.5,
-  rest: 2.7, restEveryMin: 12, restEveryMax: 18,
+  base: 1.6, tense: 1.0, relief: 3.0,
+  rest: 2.4, restEveryMin: 14, restEveryMax: 22,
   tenseChance: 0.18,
   revGap: 0.7, triGap: 0.6, compoundExit: 0.8,
-  trailLeadIn: 0.6, trailExit: 1.0, trailRingGap: 0.15,
-  trailGapW: 35 * Math.PI / 180,
-  trailLenMin: 6, trailLenMax: 10, trailLongMax: 14,
-  trailP4Weight: 0.10, trailP5Weight: 0.15,
-  straightSweep: Math.PI / 2, scurveSweep: Math.PI / 2,
-  spiralSweep: Math.PI, wobbleSweep: Math.PI / 3, wobbleAmp: 0.25,
-  trailSpiralGapMul: 1.5,
   wideMul: 1.15, narrowMul: 0.7, twoMul: 0.85, sliverMul: 0.8,
   threeMul: 0.72, rotMul: 1.0, counterMul: 0.95,
   shrinkFromMul: 1.25, shrinkToMul: 0.5,
   revGapMul: 0.9, triGapMul: 0.85,
   phase2: 5, phase3: 12, phase4: 22, phase5: 35,
 };
-// Phase variant weights. Phases 4/5 get trails on top via trailP*Weight.
+const VARIANT_TINT = {
+  A: 0xfff0c8, B: 0xff8080, C: 0x80ffa0, D: 0xff70d0, E: 0xb888ff,
+  F: 0xffa040, G: 0x40d0ff, H: 0xffe040, I: 0x70ff70, J: 0xff60ff,
+};
+function tagTints(arr, from, key) {
+  const t = VARIANT_TINT[key];
+  for (let i = from; i < arr.length; i += 1) arr[i].tint = t;
+}
 const PHASE_WEIGHTS = {
-  1: { A: 60, B: 25, C: 15 },
-  2: { A: 28, B: 25, C: 20, D: 14, F: 13 },
-  3: { A: 14, B: 18, C: 14, D: 14, E: 10, F: 14, H: 10, I: 6 },
-  4: { B: 14, C: 12, D: 12, E: 8, F: 12, G: 8, H: 10, I: 12, J: 12 },
-  5: { B: 10, C: 10, D: 10, E: 6, F: 10, G: 12, H: 10, I: 14, J: 18 },
+  5: { A: 12, B: 10, C: 10, D: 10, E: 6, F: 10, G: 12, H: 10, I: 14, J: 14 },
 };
 
 function startFall(s) {
@@ -1967,45 +1963,7 @@ function pickWeightedKey(weights) {
   return keys[0];
 }
 
-function currentPhase(t) {
-  const c = OBS_CFG;
-  if (t < c.phase2) return 1;
-  if (t < c.phase3) return 2;
-  if (t < c.phase4) return 3;
-  if (t < c.phase5) return 4;
-  return 5;
-}
-
-function spawnTrail(s) {
-  const f = s.fall;
-  const c = OBS_CFG;
-  const phase = currentPhase(f.elapsed);
-  const zPerSec = f.speed * 60;
-  const shapes = phase >= 5 ? { straight: 35, scurve: 35, wobble: 25, spiral: 5 }
-                            : { straight: 55, wobble: 45 };
-  const shape = pickWeightedKey(shapes);
-  const maxLen = phase >= 5 ? c.trailLongMax : c.trailLenMax;
-  const len = c.trailLenMin + Math.floor(Math.random() * (maxLen - c.trailLenMin + 1));
-  const zOff = zPerSec * c.trailRingGap;
-  const leadZ = zPerSec * c.trailLeadIn;
-  const entry = Math.random() * Math.PI * 2;
-  const dir = Math.random() < 0.5 ? 1 : -1;
-  for (let i = 0; i < len; i += 1) {
-    const u = len > 1 ? i / (len - 1) : 0;
-    let theta = entry;
-    if (shape === 'straight') theta = entry + u * c.straightSweep * dir;
-    else if (shape === 'scurve') theta = entry + Math.sin(u * Math.PI * 2) * c.scurveSweep * dir;
-    else if (shape === 'spiral') theta = entry + u * c.spiralSweep * dir;
-    else theta = entry + u * c.wobbleSweep * dir + (Math.random() - 0.5) * c.wobbleAmp;
-    f.obs.push({
-      type: 'wall', z: FAR_P + leadZ + i * zOff,
-      gapTheta: theta,
-      gapW: c.trailGapW * (shape === 'spiral' ? c.trailSpiralGapMul : 1),
-      trail: true,
-    });
-  }
-  return c.trailLeadIn + (len - 1) * c.trailRingGap + c.trailExit;
-}
+function currentPhase(t) { return 5; }
 
 function spawnFallObstacle(s) {
   const f = s.fall;
@@ -2022,15 +1980,9 @@ function spawnFallObstacle(s) {
     return { delay: c.rest };
   }
 
-  // Trails are rolled separately in phases 4/5.
-  const trailWeight = phase === 4 ? c.trailP4Weight : phase >= 5 ? c.trailP5Weight : 0;
-  let variant;
   let extra = 0;
-  if (trailWeight > 0 && Math.random() < trailWeight) {
-    extra = spawnTrail(s);
-    return { delay: extra };
-  }
-  variant = pickWeightedKey(PHASE_WEIGHTS[phase]);
+  const variant = pickWeightedKey(PHASE_WEIGHTS[phase]);
+  const fromIdx = f.obs.length;
 
   const rand2pi = () => Math.random() * Math.PI * 2;
   const sign = () => (Math.random() < 0.5 ? -1 : 1);
@@ -2095,6 +2047,7 @@ function spawnFallObstacle(s) {
     f.obs.push({ type: 'wall', z: FAR_P, gapTheta: rand2pi(), gapW: baseGap });
   }
 
+  tagTints(f.obs, fromIdx, variant);
   // Decide spacing to NEXT obstacle: tense waves after phase 1, relief already baked in for E.
   let delay;
   if (variant === 'E') delay = c.relief;
@@ -2287,8 +2240,8 @@ function drawFallObstacle(s, g, o, scale, cx, cy) {
     };
 
     const shOff = Math.max(2, 6 * sF);
-    const face = fogMix(o.trail ? 0xc8dcff : 0xfff0c8, o.z);
-    const rim = fogMix(o.trail ? 0xc0f8ff : 0xffffff, o.z);
+    const face = fogMix(o.tint, o.z);
+    const rim = fogMix(0xffffff, o.z);
     drawDonutSeg(shOff, shOff, 0x000000, 0.55, Ro * sF, Ri * sF);
     drawDonutSeg(0, 0, face, 1, Ro * sF, Ri * sF);
 
