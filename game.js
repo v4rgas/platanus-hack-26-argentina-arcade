@@ -1626,6 +1626,9 @@ function tagTints(arr, from, key) {
 }
 const PHASE_WEIGHTS = {
   5: { A: 12, B: 10, C: 10, D: 10, E: 6, F: 10, G: 12, H: 10, I: 14, J: 14 },
+  // Warmup distribution: heavy on wide singles (A), no compound chains (G/I/J)
+  // and no shrinkers (H) until the player has settled in.
+  1: { A: 30, B: 6, C: 14, D: 0, E: 12, F: 6, G: 0, H: 0, I: 0, J: 0 },
 };
 
 function startFall(s) {
@@ -1837,7 +1840,8 @@ function updateFall(s, time, delta) {
 
   if (!f.dead) {
     f.elapsed += dt;
-    f.speed = Math.min(22, 9 + f.elapsed * 1.4);
+    // Ease-in: chill start, hits prior max (~22) by ~30s, then keeps creeping up to 30 by ~90s.
+    f.speed = Math.min(30, 6 + f.elapsed * 0.55 + Math.max(0, f.elapsed - 30) * 0.13);
 
     const step = 0.45;
     if (pressed(s, 'P1_L') || pressed(s, 'P2_L')) { f.rot += step; nudgeFallView(s, -28); }
@@ -1963,7 +1967,7 @@ function pickWeightedKey(weights) {
   return keys[0];
 }
 
-function currentPhase(t) { return 5; }
+function currentPhase(t) { return t < 18 ? 1 : 5; }
 
 function spawnFallObstacle(s) {
   const f = s.fall;
@@ -2053,7 +2057,9 @@ function spawnFallObstacle(s) {
   if (variant === 'E') delay = c.relief;
   else if (phase >= 2 && Math.random() < c.tenseChance) delay = c.tense;
   else delay = c.base;
-  return { delay: delay + extra };
+  // Warmup stretch: pad spacing up to +0.9s at t=0, fading to 0 by ~20s.
+  const warm = Math.max(0, 1 - t / 20) * 0.9;
+  return { delay: delay + extra + warm };
 }
 
 function checkFallCollision(s) {
